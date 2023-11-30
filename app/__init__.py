@@ -10,4 +10,4 @@ app.config['JWT_SECRET_KEY'] = 'jwt-secret-key'
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
-#from app import routes
+from app import routes
