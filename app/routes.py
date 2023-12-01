@@ -39,20 +39,32 @@ def login():
     access_token = create_access_token(identity=username)
     return jsonify(access_token=access_token, user=user.to_dict()), 200
 
-@app.route('/user/profile', methods=['GET', 'PUT'])
-@jwt_required()
-def user_profile():
-    current_user = get_jwt_identity()
-    user = User.query.filter_by(username=current_user).first()
+    @app.route('/user/profile', methods=['GET', 'PUT'])
+    @jwt_required()
+    def user_profile():
+        current_user = get_jwt_identity()
+        user = User.query.filter_by(username=current_user).first()
 
-    if request.method == 'GET':
+        if request.method == 'PUT':
+            data = request.get_json()
+            new_username = data.get('username')
+            new_email = data.get('email', user.email)
+            new_password = data.get('password')
+
+            # Benutzername-Validierung
+            if new_username and new_username != user.username:
+                if User.query.filter_by(username=new_username).first():
+                    return jsonify(message="Benutzername bereits vergeben"), 409
+                user.username = new_username
+
+            user.email = new_email
+            if new_password:
+                user.password_hash = generate_password_hash(new_password)
+
+            db.session.commit()
+            return jsonify(message="Profil aktualisiert", user=user.to_dict()), 200
+
         return jsonify(user.to_dict()), 200
-
-    if request.method == 'PUT':
-        data = request.get_json()
-        user.email = data.get('email', user.email)
-        db.session.commit()
-        return jsonify(message="Profil aktualisiert", user=user.to_dict()), 200
 
 @app.route('/tasks', methods=['POST', 'GET'])
 @jwt_required()
@@ -82,7 +94,9 @@ def tasks():
 @app.route('/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required()
 def task(task_id):
-    task = Task.query.get(task_id)
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+    task = Task.query.filter_by(id=task_id, user_id=user.id).first()
 
     if not task:
         return jsonify(message="Aufgabe nicht gefunden"), 404
