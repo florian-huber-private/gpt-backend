@@ -38,3 +38,64 @@ def login():
 
     access_token = create_access_token(identity=username)
     return jsonify(access_token=access_token), 200
+
+@app.route('/user/profile', methods=['GET', 'PUT'])
+@jwt_required()
+def user_profile():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
+    if request.method == 'GET':
+        return jsonify(username=user.username, email=user.email), 200
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        user.email = data.get('email', user.email)
+        db.session.commit()
+        return jsonify(message="Profil aktualisiert"), 200
+
+@app.route('/tasks', methods=['POST', 'GET'])
+@jwt_required()
+def tasks():
+    if request.method == 'POST':
+        # Logik zum Hinzufügen einer neuen Aufgabe
+        pass
+
+    if request.method == 'GET':
+        # Logik zum Abrufen aller Aufgaben des Benutzers
+        pass
+
+@app.route('/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required()
+def task(task_id):
+    if request.method == 'GET':
+        # Logik zum Abrufen einer spezifischen Aufgabe
+        pass
+
+    if request.method == 'PUT':
+        # Logik zum Aktualisieren einer spezifischen Aufgabe
+        pass
+
+    if request.method == 'DELETE':
+        # Logik zum Löschen einer spezifischen Aufgabe
+        pass
+
+@app.route('/categories', methods=['POST', 'GET'])
+def categories():
+    if request.method == 'POST':
+        # Logik zum Hinzufügen einer neuen Kategorie
+        pass
+
+    if request.method == 'GET':
+        # Logik zum Abrufen aller Kategorien
+        pass
+
+@app.route('/categories/<int:category_id>', methods=['PUT', 'DELETE'])
+def category(category_id):
+    if request.method == 'PUT':
+        # Logik zum Aktualisieren einer spezifischen Kategorie
+        pass
+
+    if request.method == 'DELETE':
+        # Logik zum Löschen einer spezifischen Kategorie
+        pass
