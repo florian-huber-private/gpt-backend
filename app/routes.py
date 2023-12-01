@@ -14,6 +14,20 @@ def validate_password(password):
     return len(password) >= 8 and any(c.isdigit() for c in password) \
         and any(c.isupper() for c in password) and any(c.islower() for c in password)
 
+def validate_task_title(title):
+    return title and isinstance(title, str)
+
+def validate_task_priority(priority):
+    return priority in [p.name for p in TaskPriority]
+
+def validate_task_status(status):
+    return status in [s.name for s in TaskStatus]
+
+def validate_category_id(category_id):
+    if category_id is not None:
+        return Category.query.get(category_id) is not None
+    return True
+
 @app.route('/auth/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -100,6 +114,19 @@ def tasks():
 
     if request.method == 'POST':
         data = request.get_json()
+        
+        if not validate_task_title(data.get('title')):
+            return jsonify(message="Ungültiger Titel"), 400
+
+        if 'priority' in data and not validate_task_priority(data.get('priority')):
+            return jsonify(message="Ungültige Priorität"), 400
+
+        if 'status' in data and not validate_task_status(data.get('status')):
+            return jsonify(message="Ungültiger Status"), 400
+
+        if 'category_id' in data and not validate_category_id(data.get('category_id')):
+            return jsonify(message="Ungültige Kategorie-ID"), 400
+
         new_task = Task(
             user_id=user.id,
             title=data['title'],
