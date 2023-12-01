@@ -51,8 +51,8 @@ class Task(db.Model):
             'description': self.description,
             'priority': self.priority.name,
             'category_id': self.category_id,
-            'creation_date': self.creation_date.isoformat(),
-            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'creation_date': self.creation_date.strftime("%Y-%m-%d"),
+            'due_date': self.due_date.strftime("%Y-%m-%d") if self.due_date else None,
             'status': self.status.name
         }
 

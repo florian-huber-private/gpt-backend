@@ -7,7 +7,7 @@ from werkzeug.security import check_password_hash
 from datetime import datetime
 
 def validate_email(email):
-    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    email_regex = r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$'
     return re.match(email_regex, email) is not None
 
 def validate_password(password):
@@ -163,7 +163,7 @@ def task(task_id):
         task.description = data.get('description', task.description)
         task.priority = data.get('priority', task.priority)
         task.category_id = data.get('category_id', task.category_id)
-        task.due_date = datetime.strptime(data.get('due_date', task.due_date),"%Y-%m-%dT%H:%M:%S") if data.get('due_date') or task.due_date else None
+        task.due_date = datetime.strptime(data.get('due_date', task.due_date),"%Y-%m-%d") if data.get('due_date') or task.due_date else None
         task.status = data.get('status', task.status)
         db.session.commit()
         return jsonify(message="Aufgabe aktualisiert", task=task.to_dict()), 200
