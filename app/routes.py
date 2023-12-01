@@ -2,7 +2,7 @@ import re
 from app import app, db
 from flask import request, jsonify
 from app.models import User
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash
 from datetime import datetime
 
@@ -114,7 +114,7 @@ def tasks():
 
     if request.method == 'POST':
         data = request.get_json()
-        
+
         if not validate_task_title(data.get('title')):
             return jsonify(message="Ungültiger Titel"), 400
 
