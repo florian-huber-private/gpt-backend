@@ -7,7 +7,7 @@ from werkzeug.security import check_password_hash
 from datetime import datetime
 
 def validate_email(email):
-    email_regex = r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$'
+    email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
     return re.match(email_regex, email) is not None
 
 def validate_password(password):
@@ -69,42 +69,61 @@ def login():
     access_token = create_access_token(identity=username)
     return jsonify(access_token=access_token, user=user.to_dict()), 200
 
-    @app.route('/user/profile', methods=['GET', 'PUT'])
-    @jwt_required()
-    def user_profile():
-        current_user = get_jwt_identity()
-        user = User.query.filter_by(username=current_user).first()
+@app.route('/user/profile', methods=['PUT'])
+@jwt_required()
+def user_profile():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
 
-        if request.method == 'PUT':
-            data = request.get_json()
-            new_username = data.get('username')
-            new_email = data.get('email', user.email)
-            new_password = data.get('password')
+    if request.method == 'PUT':
+        data = request.get_json()
+        new_username = data.get('username')
+        new_email = data.get('email', user.email)
 
-            # Benutzername-Validierung
-            if new_username and new_username != user.username:
-                if User.query.filter_by(username=new_username).first():
-                    return jsonify(message="Benutzername bereits vergeben"), 409
-                user.username = new_username
+        # Benutzername-Validierung
+        if new_username and new_username != user.username:
+            if User.query.filter_by(username=new_username).first():
+                return jsonify(message="Benutzername bereits vergeben"), 409
+            user.username = new_username
 
-            if new_email and new_email != user.email:
-                if User.query.filter_by(email=new_email).first():
-                    return jsonify(message="E-Mail bereits vergeben"), 409
+        if new_email and new_email != user.email:
+            if User.query.filter_by(email=new_email).first():
+                return jsonify(message="E-Mail bereits vergeben"), 409
+        
+            if not validate_email(new_email):
+                    return jsonify(message="Ungültiges E-Mail-Format"), 400
             
-                if not validate_email(new_email):
-                        return jsonify(message="Ungültiges E-Mail-Format"), 400
-                
-                user.email = new_email
+            user.email = new_email
 
-            if new_password and not user.check_password(new_password):
-                if not validate_password(password):
-                    return jsonify(message="Passwort nicht stark genug"), 400
-                user.set_password(new_password)
+        db.session.commit()
+        return jsonify(message="Profil aktualisiert", user=user.to_dict()), 200
 
-            db.session.commit()
-            return jsonify(message="Profil aktualisiert", user=user.to_dict()), 200
+    return jsonify(user.to_dict()), 200
 
-        return jsonify(user.to_dict()), 200
+@app.route('/user/profile/change-password', methods=['PUT'])
+@jwt_required()
+def change_password():
+    current_user_identity = get_jwt_identity()
+    user = User.query.filter_by(username=current_user_identity).first()
+
+    if user is None:
+        return jsonify(message="Benutzer nicht gefunden"), 404
+
+    data = request.get_json()
+    old_password = data.get('oldPassword')
+    new_password = data.get('newPassword')
+
+    if not user.check_password(old_password):
+        return jsonify(message="Falsches altes Passwort"), 401
+
+    if not validate_password(new_password):
+        return jsonify(message="Neues Passwort nicht stark genug"), 400
+
+    user.set_password(new_password)
+    db.session.commit()
+
+    return jsonify(message="Passwort erfolgreich geändert"), 200
+
 
 @app.route('/tasks', methods=['POST', 'GET'])
 @jwt_required()
