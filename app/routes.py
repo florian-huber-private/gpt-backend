@@ -1,8 +1,18 @@
+import re
 from app import app, db
 from flask import request, jsonify
 from app.models import User
 from flask_jwt_extended import create_access_token
 from werkzeug.security import check_password_hash
+from datetime import datetime
+
+def validate_email(email):
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return re.match(email_regex, email) is not None
+
+def validate_password(password):
+    return len(password) >= 8 and any(c.isdigit() for c in password) \
+        and any(c.isupper() for c in password) and any(c.islower() for c in password)
 
 @app.route('/auth/register', methods=['POST'])
 def register():
@@ -10,6 +20,12 @@ def register():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+
+    if not validate_email(email):
+        return jsonify(message="Ungültiges E-Mail-Format"), 400
+
+    if not validate_password(password):
+        return jsonify(message="Passwort nicht stark genug"), 400
 
     # Überprüfen, ob Benutzer bereits existiert
     if User.query.filter_by(username=username).first() is not None:
@@ -57,9 +73,19 @@ def login():
                     return jsonify(message="Benutzername bereits vergeben"), 409
                 user.username = new_username
 
-            user.email = new_email
-            if new_password:
-                user.password_hash = generate_password_hash(new_password)
+            if new_email and new_email != user.email:
+                if User.query.filter_by(email=new_email).first():
+                    return jsonify(message="E-Mail bereits vergeben"), 409
+            
+                if not validate_email(new_email):
+                        return jsonify(message="Ungültiges E-Mail-Format"), 400
+                
+                user.email = new_email
+
+            if new_password and not user.check_password(new_password):
+                if not validate_password(password):
+                    return jsonify(message="Passwort nicht stark genug"), 400
+                user.set_password(new_password)
 
             db.session.commit()
             return jsonify(message="Profil aktualisiert", user=user.to_dict()), 200
