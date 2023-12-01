@@ -4,14 +4,14 @@ from datetime import datetime
 import enum
 
 class TaskStatus(enum.Enum):
-    TODO = "To Do"
-    IN_PROGRESS = "In Progress"
-    COMPLETED = "Completed"
+    TODO = "TO_DO"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
 
 class TaskPriority(enum.Enum):
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
