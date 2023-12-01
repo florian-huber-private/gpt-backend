@@ -25,6 +25,13 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email
+        }
+
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -36,6 +43,25 @@ class Task(db.Model):
     due_date = db.Column(db.DateTime)
     status = db.Column(db.Enum(TaskStatus), default=TaskStatus.TODO)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'title': self.title,
+            'description': self.description,
+            'priority': self.priority.name,
+            'category_id': self.category_id,
+            'creation_date': self.creation_date.isoformat(),
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'status': self.status.name
+        }
+
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }

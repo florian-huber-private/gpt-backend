@@ -37,7 +37,7 @@ def login():
         return jsonify(message="Falscher Benutzername oder Passwort"), 401
 
     access_token = create_access_token(identity=username)
-    return jsonify(access_token=access_token), 200
+    return jsonify(access_token=access_token, user=user.to_dict()), 200
 
 @app.route('/user/profile', methods=['GET', 'PUT'])
 @jwt_required()
@@ -46,13 +46,13 @@ def user_profile():
     user = User.query.filter_by(username=current_user).first()
 
     if request.method == 'GET':
-        return jsonify(username=user.username, email=user.email), 200
+        return jsonify(user.to_dict()), 200
 
     if request.method == 'PUT':
         data = request.get_json()
         user.email = data.get('email', user.email)
         db.session.commit()
-        return jsonify(message="Profil aktualisiert"), 200
+        return jsonify(message="Profil aktualisiert", user=user.to_dict()), 200
 
 @app.route('/tasks', methods=['POST', 'GET'])
 @jwt_required()
@@ -77,7 +77,7 @@ def tasks():
 
     if request.method == 'GET':
         tasks = Task.query.filter_by(user_id=user.id).all()
-        return jsonify([{'id': task.id, 'title': task.title, 'status': task.status.name} for task in tasks]), 200
+        return jsonify([task.to_dict() for task in tasks]), 200
 
 @app.route('/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required()
@@ -88,7 +88,7 @@ def task(task_id):
         return jsonify(message="Aufgabe nicht gefunden"), 404
 
     if request.method == 'GET':
-        return jsonify(id=task.id, title=task.title, description=task.description, status=task.status.name), 200
+        return jsonify(task.to_dict()), 200
 
     if request.method == 'PUT':
         data = request.get_json()
@@ -99,7 +99,7 @@ def task(task_id):
         task.due_date = data.get('due_date', task.due_date)
         task.status = data.get('status', task.status)
         db.session.commit()
-        return jsonify(message="Aufgabe aktualisiert"), 200
+        return jsonify(message="Aufgabe aktualisiert", task=task.to_dict()), 200
 
     if request.method == 'DELETE':
         db.session.delete(task)
@@ -117,7 +117,7 @@ def categories():
 
     if request.method == 'GET':
         categories = Category.query.all()
-        return jsonify([{'id': category.id, 'name': category.name} for category in categories]), 200
+        return jsonify([category.to_dict() for category in categories]), 200
 
 @app.route('/categories/<int:category_id>', methods=['PUT', 'DELETE'])
 def category(category_id):
@@ -130,7 +130,7 @@ def category(category_id):
         data = request.get_json()
         category.name = data.get('name', category.name)
         db.session.commit()
-        return jsonify(message="Kategorie aktualisiert"), 200
+        return jsonify(message="Kategorie aktualisiert", category=category.to_dict()), 200
 
     if request.method == 'DELETE':
         db.session.delete(category)
