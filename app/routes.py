@@ -1,7 +1,7 @@
 import re
 from app import app, db
 from flask import request, jsonify
-from app.models import User, Task, TaskPriority, TaskStatus
+from app.models import User, Task, TaskPriority, TaskStatus, Category
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash
 from datetime import datetime
@@ -124,8 +124,8 @@ def tasks():
         if 'status' in data and not validate_task_status(data.get('status')):
             return jsonify(message="Ungültiger Status"), 400
 
-        """ if 'category_id' in data and not validate_category_id(data.get('category_id')):
-            return jsonify(message="Ungültige Kategorie-ID"), 400 """
+        if 'category_id' in data and not validate_category_id(data.get('category_id')):
+            return jsonify(message="Ungültige Kategorie-ID"), 400
 
         new_task = Task(
             user_id=user.id,
@@ -163,7 +163,7 @@ def task(task_id):
         task.description = data.get('description', task.description)
         task.priority = data.get('priority', task.priority)
         task.category_id = data.get('category_id', task.category_id)
-        task.due_date = datetime.strptime(data.get('due_date', task.due_date),"%Y-%m-%d") if data.get('due_date') or task.due_date else None
+        task.due_date = datetime.strptime(data.get('due_date', task.due_date),"%Y-%m-%dT%H:%M:%S") if data.get('due_date') or task.due_date else None
         task.status = data.get('status', task.status)
         db.session.commit()
         return jsonify(message="Aufgabe aktualisiert", task=task.to_dict()), 200
@@ -186,12 +186,15 @@ def categories():
         categories = Category.query.all()
         return jsonify([category.to_dict() for category in categories]), 200
 
-@app.route('/categories/<int:category_id>', methods=['PUT', 'DELETE'])
+@app.route('/categories/<int:category_id>', methods=['GET', 'PUT', 'DELETE'])
 def category(category_id):
     category = Category.query.get(category_id)
 
     if not category:
         return jsonify(message="Kategorie nicht gefunden"), 404
+
+    if request.method == 'GET':
+        return jsonify(category.to_dict()), 200
 
     if request.method == 'PUT':
         data = request.get_json()
