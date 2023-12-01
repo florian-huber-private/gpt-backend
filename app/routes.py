@@ -57,45 +57,83 @@ def user_profile():
 @app.route('/tasks', methods=['POST', 'GET'])
 @jwt_required()
 def tasks():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
     if request.method == 'POST':
-        # Logik zum Hinzufügen einer neuen Aufgabe
-        pass
+        data = request.get_json()
+        new_task = Task(
+            user_id=user.id,
+            title=data['title'],
+            description=data.get('description', ''),
+            priority=data.get('priority', TaskPriority.MEDIUM),
+            category_id=data.get('category_id'),
+            due_date=data.get('due_date'),
+            status=TaskStatus.TODO
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        return jsonify(message="Aufgabe erstellt"), 201
 
     if request.method == 'GET':
-        # Logik zum Abrufen aller Aufgaben des Benutzers
-        pass
+        tasks = Task.query.filter_by(user_id=user.id).all()
+        return jsonify([{'id': task.id, 'title': task.title, 'status': task.status.name} for task in tasks]), 200
 
 @app.route('/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required()
 def task(task_id):
+    task = Task.query.get(task_id)
+
+    if not task:
+        return jsonify(message="Aufgabe nicht gefunden"), 404
+
     if request.method == 'GET':
-        # Logik zum Abrufen einer spezifischen Aufgabe
-        pass
+        return jsonify(id=task.id, title=task.title, description=task.description, status=task.status.name), 200
 
     if request.method == 'PUT':
-        # Logik zum Aktualisieren einer spezifischen Aufgabe
-        pass
+        data = request.get_json()
+        task.title = data.get('title', task.title)
+        task.description = data.get('description', task.description)
+        task.priority = data.get('priority', task.priority)
+        task.category_id = data.get('category_id', task.category_id)
+        task.due_date = data.get('due_date', task.due_date)
+        task.status = data.get('status', task.status)
+        db.session.commit()
+        return jsonify(message="Aufgabe aktualisiert"), 200
 
     if request.method == 'DELETE':
-        # Logik zum Löschen einer spezifischen Aufgabe
-        pass
+        db.session.delete(task)
+        db.session.commit()
+        return jsonify(message="Aufgabe gelöscht"), 200
 
 @app.route('/categories', methods=['POST', 'GET'])
 def categories():
     if request.method == 'POST':
-        # Logik zum Hinzufügen einer neuen Kategorie
-        pass
+        data = request.get_json()
+        new_category = Category(name=data['name'])
+        db.session.add(new_category)
+        db.session.commit()
+        return jsonify(message="Kategorie erstellt"), 201
 
     if request.method == 'GET':
-        # Logik zum Abrufen aller Kategorien
-        pass
+        categories = Category.query.all()
+        return jsonify([{'id': category.id, 'name': category.name} for category in categories]), 200
 
 @app.route('/categories/<int:category_id>', methods=['PUT', 'DELETE'])
 def category(category_id):
+    category = Category.query.get(category_id)
+
+    if not category:
+        return jsonify(message="Kategorie nicht gefunden"), 404
+
     if request.method == 'PUT':
-        # Logik zum Aktualisieren einer spezifischen Kategorie
-        pass
+        data = request.get_json()
+        category.name = data.get('name', category.name)
+        db.session.commit()
+        return jsonify(message="Kategorie aktualisiert"), 200
 
     if request.method == 'DELETE':
-        # Logik zum Löschen einer spezifischen Kategorie
-        pass
+        db.session.delete(category)
+        db.session.commit()
+        return jsonify(message="Kategorie gelöscht"), 200
+
